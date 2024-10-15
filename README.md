@@ -1,3 +1,8 @@
+### Temp release steps
+```shell
+./gradlew uploadArchives -q
+```
+
 # Module Graph Assert
 A Gradle plugin that helps keep your module graph healthy and lean.
 
