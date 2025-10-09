@@ -1,9 +1,11 @@
 plugins {
-  id "com.gradle.plugin-publish" version "1.3.1"
+//  id "com.gradle.plugin-publish" version "1.3.1"
   id "java-gradle-plugin"
 }
 
 apply plugin: 'kotlin'
+apply plugin: "signing"
+apply plugin: "com.vanniktech.maven.publish"
 
 repositories {
   mavenCentral()
@@ -14,6 +16,16 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
   testImplementation 'junit:junit:4.13.2'
+}
+
+compileJava {
+  sourceCompatibility = "11"
+  targetCompatibility = "11"
+}
+
+compileTestJava {
+  sourceCompatibility = "11"
+  targetCompatibility = "11"
 }
 
 compileKotlin {
@@ -34,17 +46,45 @@ java {
 group = 'com.jraska.module.graph.assertion'
 
 gradlePlugin {
-  website = 'https://github.com/jraska/modules-graph-assert'
-  vcsUrl = 'https://github.com/jraska/modules-graph-assert'
+  website = 'https://github.com/blakepolidore/modules-graph-assert'
+  vcsUrl = 'https://github.com/blakepolidore/modules-graph-assert'
 
   plugins {
     modulesGraphAssert {
       id = 'com.jraska.module.graph.assertion'
-      version = '2.9.0'
+      version = '2.9.0-2'
       displayName = 'Modules Graph Assert'
       description = 'Gradle plugin to keep your modules graph healthy and lean.'
       implementationClass = 'com.jraska.module.graph.assertion.ModuleGraphAssertionsPlugin'
       tags.addAll('graph', 'assert', 'build speed', 'android', 'java', 'kotlin', 'quality', 'multiprojects', 'module')
+    }
+  }
+}
+
+// Find the first non-null Gradle property or environment variable
+// corresponding to the given names, giving preference to Gradle properties.
+String propOrEnv(String... names) {
+  // hasProperty, getProperty don't work when called directly in a closure;
+  // they need a receiver that knows about properties, like rootProject.
+  def p = rootProject
+  def result = names.findResult { p.hasProperty(it) ? p.getProperty(it) : System.getenv(it) }
+  if (result == null) {
+    logger.error("Missing gradle property or environment variable: $names")
+  }
+  return result
+}
+
+plugins.withId("com.vanniktech.maven.publish") {
+  mavenPublish {
+    releaseSigningEnabled = false
+    targets {
+      // Modify the existing uploadArchives task
+      uploadArchives {
+        releaseRepositoryUrl = propOrEnv("ARTIFACTORY_URL", "instacart_artifactory_url")
+        snapshotRepositoryUrl = propOrEnv("ARTIFACTORY_URL", "instacart_artifactory_url")
+        repositoryUsername = propOrEnv("ARTIFACTORY_USERNAME", "instacart_artifactory_username")
+        repositoryPassword = propOrEnv("ARTIFACTORY_PASSWORD", "instacart_artifactory_password")
+      }
     }
   }
 }
